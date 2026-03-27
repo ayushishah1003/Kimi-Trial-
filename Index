@@ -1,0 +1,725 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISLAND COUNCIL: Sustainability Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow-x: hidden;
+        }
+        
+        .island-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .resource-icon {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .resource-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .character-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .character-card.selected {
+            border: 3px solid #fbbf24;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        
+        .wave-animation {
+            animation: wave 3s ease-in-out infinite;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-warning {
+            animation: pulse-red 2s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .meter-fill {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .decision-btn {
+            transition: all 0.2s;
+        }
+        
+        .decision-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .decision-btn:active {
+            transform: translateY(0);
+        }
+        
+        .prediction-input {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all 0.3s;
+        }
+        
+        .prediction-input:focus {
+            outline: none;
+            border-color: #fbbf24;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .tree-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+    }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fbbf24;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-white">
+
+    <!-- Header -->
+    <header class="bg-white/10 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-2xl">🏝️</div>
+                <div>
+                    <h1 class="font-bold text-xl tracking-wide">ISLAND COUNCIL</h1>
+                    <p class="text-xs text-white/70">IB MYP Individuals & Societies • Grade 8</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <p class="text-xs text-white/70">Learner Profile Focus:</p>
+                    <p class="font-bold text-yellow-300">THINKER & REFLECTIVE</p>
+                </div>
+                <button onclick="showHelp()" class="w-10 h-10 bg-white/20 rounded-full hover:bg-white/30 transition flex items-center justify-center text-xl">❓</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-6">
+        
+        <!-- Role Selection Phase -->
+        <div id="rolePhase" class="slide-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold mb-2">Welcome to the Island Council</h2>
+                <p class="text-lg text-white/80 max-w-2xl mx-auto">You are one of eight residents on a remote tropical island. Your community must make decisions about resource use and population growth. Choose your character to begin.</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <!-- Characters -->
+                <div class="character-card bg-white/10 backdrop-blur rounded-2xl p-4 text-center" onclick="selectCharacter('Maya', this)">
+                    <img src="https://kimi-web-img.moonshot.cn/img/www.shutterstock.com/2599872343.jpg" alt="Maya" class="w-20 h-20 rounded-full mx-auto mb-2 object-cover border-4 border-white/30">
+                    <h3 class="font-bold">Maya</h3>
+                    <p class="text-xs text-white/70">Fisher</p>
+                </div>
+                <div class="character-card bg-white/10 backdrop-blur rounded-2xl p-4 text-center" onclick="selectCharacter('Leo', this)">
+                    <img src="https://kimi-web-img.moonshot.cn/img/www.shutterstock.com/2490874353.jpg" alt="Leo" class="w-20 h-20 rounded-full mx-auto mb-2 object-cover border-4 border-white/30">
+                    <h3 class="font-bold">Leo</h3>
+                    <p class="text-xs text-white/70">Farmer</p>
+                </div>
+                <div class="character-card bg-white/10 backdrop-blur rounded-2xl p-4 text-center" onclick="selectCharacter('Sofia', this)">
+                    <img src="https://kimi-web-img.moonshot.cn/img/media.istockphoto.com/99c8682d09336bc719c9eb44fbc517cbd2e1e923.jpg" alt="Sofia" class="w-20 h-20 rounded-full mx-auto mb-2 object-cover border-4 border-white/30">
+                    <h3 class="font-bold">Sofia</h3>
+                    <p class="text-xs text-white/70">Elder</p>
+                </div>
+                <div class="character-card bg-white/10 backdrop-blur rounded-2xl p-4 text-center" onclick="selectCharacter('Kai', this)">
+                    <img src="https://kimi-web-img.moonshot.cn/img/www.shutterstock.com/78993d208a0847ad36c92b841526f30a0de851b1.jpg" alt="Kai" class="w-20 h-20 rounded-full mx-auto mb-2 object-cover border-4 border-white/30">
+                    <h3 class="font-bold">Kai</h3>
+                    <p class="text-xs text-white/70">Builder</p>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button id="startBtn" onclick="startSimulation()" class="bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold py-4 px-12 rounded-full text-lg shadow-lg transform transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Enter the Island Council
+                </button>
+                <p class="mt-2 text-sm text-white/60">Select a character above to continue</p>
+            </div>
+        </div>
+
+        <!-- Simulation Phase -->
+        <div id="simulationPhase" class="hidden">
+            
+            <!-- Top Stats Bar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">👥</span>
+                        <span class="font-bold">Population</span>
+                    </div>
+                    <div class="text-3xl font-bold" id="popDisplay">8</div>
+                    <div class="text-xs text-white/70" id="popTrend">Stable</div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">🌾</span>
+                        <span class="font-bold">Food</span>
+                    </div>
+                    <div class="w-full bg-black/30 rounded-full h-3 mb-2">
+                        <div id="foodBar" class="meter-fill bg-green-400 h-3 rounded-full" style="width: 80%"></div>
+                    </div>
+                    <div class="text-xs text-white/70"><span id="foodValue">80</span>% capacity</div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">💧</span>
+                        <span class="font-bold">Water</span>
+                    </div>
+                    <div class="w-full bg-black/30 rounded-full h-3 mb-2">
+                        <div id="waterBar" class="meter-fill bg-blue-400 h-3 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <div class="text-xs text-white/70"><span id="waterValue">75</span>% capacity</div>
+                </div>
+                
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-2xl">🌲</span>
+                        <span class="font-bold">Materials</span>
+                    </div>
+                    <div class="w-full bg-black/30 rounded-full h-3 mb-2">
+                        <div id="materialBar" class="meter-fill bg-amber-600 h-3 rounded-full" style="width: 90%"></div>
+                    </div>
+                    <div class="text-xs text-white/70"><span id="materialValue">90</span>% capacity</div>
+                </div>
+            </div>
+
+            <!-- Island Visual -->
+            <div class="island-container mb-6 relative">
+                <img src="https://kimi-web-img.moonshot.cn/img/media.craiyon.com/7667db7d175546e601266cdd799fb23b5fd38b5b.webp" alt="Tropical Island" class="w-full rounded-2xl shadow-2xl floating">
+                
+                <!-- Resource Indicators Overlay -->
+                <div class="absolute top-4 left-4 bg-black/50 backdrop-blur rounded-lg p-2 text-xs">
+                    <div class="flex items-center gap-1 mb-1">
+                        <span>🐟</span>
+                        <span>Fishing Zone</span>
+                    </div>
+                    <div class="flex items-center gap-1 mb-1">
+                        <span>🌾</span>
+                        <span>Farm Land</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span>🏠</span>
+                        <span>Village</span>
+                    </div>
+                </div>
+
+                <!-- Year Badge -->
+                <div class="absolute top-4 right-4 bg-yellow-400 text-purple-900 font-bold px-4 py-2 rounded-full text-lg shadow-lg">
+                    Year <span id="yearDisplay">1</span>
+                </div>
+
+                <!-- Crisis Alert -->
+                <div id="crisisAlert" class="hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full font-bold pulse-warning">
+                    ⚠️ Resource Crisis Detected!
+                </div>
+            </div>
+
+            <!-- Decision Panel -->
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-1">Council Decision Required</h3>
+                        <p class="text-white/80" id="scenarioText">The island population is growing. How should the council manage resources?</p>
+                    </div>
+                    <div class="bg-white/20 rounded-full px-4 py-1 text-sm">
+                        Decision <span id="decisionNum">1</span>/5
+                    </div>
+                </div>
+
+                <!-- Prediction Section -->
+                <div class="bg-black/20 rounded-xl p-4 mb-4 border-l-4 border-yellow-400">
+                    <p class="font-bold text-yellow-300 mb-2">🤔 THINKER CHALLENGE: Make Your Prediction</p>
+                    <p class="text-sm text-white/80 mb-3">Before revealing results, predict what will happen to food resources if you choose Option A:</p>
+                    <div class="flex gap-2">
+                        <button onclick="makePrediction('increase')" class="prediction-input px-4 py-2 rounded-lg text-sm font-bold hover:bg-white/20">📈 Increase</button>
+                        <button onclick="makePrediction('decrease')" class="prediction-input px-4 py-2 rounded-lg text-sm font-bold hover:bg-white/20">📉 Decrease</button>
+                        <button onclick="makePrediction('same')" class="prediction-input px-4 py-2 rounded-lg text-sm font-bold hover:bg-white/20">➡️ Stay Same</button>
+                    </div>
+                    <p id="predictionFeedback" class="text-sm mt-2 hidden"></p>
+                </div>
+
+                <!-- Decision Buttons -->
+                <div class="grid md:grid-cols-2 gap-4" id="decisionButtons">
+                    <button onclick="makeDecision('A')" class="decision-btn bg-gradient-to-r from-green-500 to-emerald-600 p-4 rounded-xl text-left">
+                        <div class="font-bold text-lg mb-1">Option A: Expand Farms</div>
+                        <div class="text-sm opacity-90">Clear forest area to create more farmland. Short-term food boost, but environmental cost.</div>
+                    </button>
+                    <button onclick="makeDecision('B')" class="decision-btn bg-gradient-to-r from-blue-500 to-indigo-600 p-4 rounded-xl text-left">
+                        <div class="font-bold text-lg mb-1">Option B: Sustainable Fishing</div>
+                        <div class="text-sm opacity-90">Implement fishing limits to preserve fish stocks. Lower immediate yield, sustainable long-term.</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Panel -->
+            <div id="resultsPanel" class="hidden bg-white/10 backdrop-blur rounded-2xl p-6 mb-6 slide-in">
+                <h3 class="text-xl font-bold mb-4 text-yellow-300">📊 Year <span id="resultYear">1</span> Results</h3>
+                
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-black/20 rounded-lg p-3">
+                        <div class="text-sm text-white/70">Food Change</div>
+                        <div class="text-2xl font-bold" id="foodChange">--</div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-3">
+                        <div class="text-sm text-white/70">Water Change</div>
+                        <div class="text-2xl font-bold" id="waterChange">--</div>
+                    </div>
+                    <div class="bg-black/20 rounded-lg p-3">
+                        <div class="text-sm text-white/70">Materials Change</div>
+                        <div class="text-2xl font-bold" id="materialChange">--</div>
+                    </div>
+                </div>
+
+                <div class="bg-black/20 rounded-lg p-4 mb-4">
+                    <p class="font-bold mb-2">Cause & Effect Analysis:</p>
+                    <p class="text-sm text-white/80" id="causeEffectText">--</p>
+                </div>
+
+                <div class="bg-yellow-400/20 border border-yellow-400 rounded-lg p-4 mb-4">
+                    <p class="font-bold text-yellow-300 mb-1">🔄 REFLECTIVE MOMENT</p>
+                    <p class="text-sm" id="reflectionText">--</p>
+                </div>
+
+                <button onclick="nextYear()" class="w-full bg-gradient-to-r from-purple-500 to-pink-500 font-bold py-3 rounded-xl hover:shadow-lg transition">
+                    Continue to Next Year →
+                </button>
+            </div>
+
+            <!-- Reflection Journal -->
+            <div class="bg-white/5 rounded-2xl p-6">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                    <span>📝</span> Your Sustainability Journal
+                </h3>
+                <div id="journalEntries" class="space-y-2 text-sm">
+                    <p class="text-white/50 italic">Your decisions and reflections will appear here...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="endPhase" class="hidden text-center py-12">
+            <div class="text-6xl mb-4">🏆</div>
+            <h2 class="text-4xl font-bold mb-4">Simulation Complete!</h2>
+            <p class="text-xl text-white/80 mb-8">You've guided the island through 5 years of decisions.</p>
+            
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-8 max-w-2xl mx-auto mb-8">
+                <h3 class="text-2xl font-bold mb-4 text-yellow-300">Final Island Status</h3>
+                <div class="grid grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <div class="text-3xl font-bold" id="finalPop">--</div>
+                        <div class="text-sm text-white/70">Population</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold" id="finalSustainability">--</div>
+                        <div class="text-sm text-white/70">Sustainability Score</div>
+                    </div>
+                    <div>
+                        <div class="text-3xl font-bold" id="finalResources">--</div>
+                        <div class="text-sm text-white/70">Resource Health</div>
+                    </div>
+                </div>
+                <p class="text-lg" id="finalVerdict">--</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-6 max-w-2xl mx-auto mb-8 text-left">
+                <h4 class="font-bold mb-3 text-yellow-300">Key Learning Takeaways:</h4>
+                <ul class="space-y-2 text-white/80">
+                    <li>• Population growth creates pressure on finite resources</li>
+                    <li>• Short-term gains often lead to long-term consequences</li>
+                    <li>• Sustainable practices require balancing immediate needs with future survival</li>
+                    <li>• Individual decisions collectively impact community outcomes</li>
+                </ul>
+            </div>
+
+            <button onclick="location.reload()" class="bg-gradient-to-r from-green-400 to-blue-500 font-bold py-4 px-12 rounded-full text-lg shadow-lg hover:scale-105 transition">
+                Play Again with Different Choices
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-gradient-to-br from-purple-800 to-blue-900 rounded-2xl p-8 max-w-lg w-full">
+            <h3 class="text-2xl font-bold mb-4">How to Play</h3>
+            <ul class="space-y-3 text-white/80 mb-6">
+                <li>1. <strong>Select a character</strong> to represent you on the Island Council</li>
+                <li>2. Each year, you'll face a <strong>resource management decision</strong></li>
+                <li>3. <strong>Make a prediction</strong> before seeing results (Thinker attribute)</li>
+                <li>4. Observe the <strong>cause and effect</strong> of your choices</li>
+                <li>5. <strong>Reflect</strong> on the sustainability implications</li>
+                <li>6. Try to balance population growth with resource preservation</li>
+            </ul>
+            <button onclick="hideHelp()" class="w-full bg-white/20 hover:bg-white/30 py-3 rounded-xl font-bold transition">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            character: '',
+            year: 1,
+            population: 8,
+            food: 80,
+            water: 75,
+            materials: 90,
+            sustainabilityScore: 100,
+            decisions: [],
+            currentPrediction: null
+        };
+
+        // Scenarios for each year
+        const scenarios = [
+            {
+                year: 1,
+                text: "New families want to settle on the island. The population will grow from 8 to 12. How should the council prepare?",
+                options: {
+                    A: { text: "Rapid Expansion", desc: "Build housing quickly using all available materials", effects: { pop: 4, food: -10, water: -5, materials: -20 } },
+                    B: { text: "Controlled Growth", desc: "Limit new housing, prioritize resource infrastructure", effects: { pop: 2, food: 5, water: 5, materials: -10 } }
+                },
+                causeEffect: "Rapid expansion immediately accommodates more people but depletes material reserves. Controlled growth slows population increase but preserves resources.",
+                reflection: "Is it better to welcome everyone immediately or ensure we can support them long-term?"
+            },
+            {
+                year: 2,
+                text: "Food demand is increasing with the growing population. The farms are at capacity. What is your strategy?",
+                options: {
+                    A: { text: "Intensive Farming", desc: "Use fertilizers and expand into forest areas", effects: { pop: 2, food: 15, water: -15, materials: -5 } },
+                    B: { text: "Diversified Fishing", desc: "Develop fishing industry with strict quotas", effects: { pop: 1, food: 5, water: 0, materials: -5 } }
+                },
+                causeEffect: "Intensive farming boosts food production but damages water sources and forests. Sustainable fishing provides steady food without environmental degradation.",
+                reflection: "How do we balance feeding everyone today with having food tomorrow?"
+            },
+            {
+                year: 3,
+                text: "A drought season is predicted. Water reserves are showing strain. How do you respond?",
+                options: {
+                    A: { text: "Emergency Drilling", desc: "Drill deep wells and divert river water", effects: { pop: 1, food: -5, water: 20, materials: -15 } },
+                    B: { text: "Conservation Program", desc: "Implement rationing and rainwater collection", effects: { pop: 0, food: -5, water: 10, materials: -5 } }
+                },
+                causeEffect: "Emergency drilling solves the immediate crisis but requires significant materials and may deplete aquifers. Conservation preserves resources but requires sacrifice.",
+                reflection: "When facing scarcity, do we exploit more resources or use less of what we have?"
+            },
+            {
+                year: 4,
+                text: "The island has attracted attention. A trade ship offers to exchange materials for technology. Do you accept?",
+                options: {
+                    A: { text: "Aggressive Trading", desc: "Export timber and minerals for tools", effects: { pop: 2, food: 5, water: 0, materials: -30 } },
+                    B: { text: "Minimal Exchange", desc: "Trade only surplus, keep resources local", effects: { pop: 1, food: 0, water: 0, materials: -10 } }
+                },
+                causeEffect: "Aggressive trading brings technology and food but rapidly depletes natural resources. Minimal exchange preserves the island's natural capital.",
+                reflection: "Is technological progress worth the cost of our natural resources?"
+            },
+            {
+                year: 5,
+                text: "Final Decision: The island must set its long-term policy. What is your sustainability vision?",
+                options: {
+                    A: { text: "Growth Priority", desc: "Maximize population and production", effects: { pop: 5, food: -20, water: -20, materials: -20 } },
+                    B: { text: "Steady State", desc: "Maintain current population, focus on quality of life", effects: { pop: 0, food: 10, water: 10, materials: 10 } }
+                },
+                causeEffect: "Growth prioritization maximizes short-term output but risks collapse. Steady state ensures long-term survival but limits expansion.",
+                reflection: "What does true sustainability look like for our island community?"
+            }
+        ];
+
+        let currentScenario = null;
+
+        function selectCharacter(name, element) {
+            gameState.character = name;
+            
+            // Remove selected class from all
+            document.querySelectorAll('.character-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add to clicked
+            element.classList.add('selected');
+            
+            // Enable start button
+            document.getElementById('startBtn').disabled = false;
+        }
+
+        function startSimulation() {
+            document.getElementById('rolePhase').classList.add('hidden');
+            document.getElementById('simulationPhase').classList.remove('hidden');
+            loadScenario(0);
+        }
+
+        function loadScenario(index) {
+            currentScenario = scenarios[index];
+            document.getElementById('yearDisplay').textContent = currentScenario.year;
+            document.getElementById('decisionNum').textContent = currentScenario.year;
+            document.getElementById('scenarioText').textContent = currentScenario.text;
+            
+            // Update buttons
+            const btnA = document.querySelector('#decisionButtons button:first-child');
+            const btnB = document.querySelector('#decisionButtons button:last-child');
+            
+            btnA.innerHTML = `
+                <div class="font-bold text-lg mb-1">Option A: ${currentScenario.options.A.text}</div>
+                <div class="text-sm opacity-90">${currentScenario.options.A.desc}</div>
+            `;
+            
+            btnB.innerHTML = `
+                <div class="font-bold text-lg mb-1">Option B: ${currentScenario.options.B.text}</div>
+                <div class="text-sm opacity-90">${currentScenario.options.B.desc}</div>
+            `;
+            
+            // Reset prediction
+            gameState.currentPrediction = null;
+            document.getElementById('predictionFeedback').classList.add('hidden');
+            
+            // Hide results, show decisions
+            document.getElementById('resultsPanel').classList.add('hidden');
+            document.getElementById('decisionButtons').classList.remove('hidden');
+            
+            // Scroll to decision
+            document.querySelector('.decision-btn').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function makePrediction(prediction) {
+            gameState.currentPrediction = prediction;
+            const feedback = document.getElementById('predictionFeedback');
+            feedback.textContent = `You predicted: Resources will ${prediction === 'increase' ? 'increase 📈' : prediction === 'decrease' ? 'decrease 📉' : 'stay the same ➡️'}. Now make your decision to see if you're right!`;
+            feedback.classList.remove('hidden');
+        }
+
+        function makeDecision(choice) {
+            const effects = currentScenario.options[choice].effects;
+            
+            // Store decision
+            gameState.decisions.push({
+                year: gameState.year,
+                choice: choice,
+                prediction: gameState.currentPrediction,
+                effects: effects
+            });
+            
+            // Apply effects
+            const oldFood = gameState.food;
+            gameState.population += effects.pop;
+            gameState.food = Math.max(0, Math.min(100, gameState.food + effects.food));
+            gameState.water = Math.max(0, Math.min(100, gameState.water + effects.water));
+            gameState.materials = Math.max(0, Math.min(100, gameState.materials + effects.materials));
+            
+            // Calculate sustainability score
+            gameState.sustainabilityScore = Math.round((gameState.food + gameState.water + gameState.materials) / 3);
+            
+            // Update display
+            updateStats();
+            
+            // Show results
+            showResults(choice, oldFood);
+            
+            // Add to journal
+            addToJournal(choice, effects);
+            
+            // Check for crisis
+            if (gameState.food < 30 || gameState.water < 30 || gameState.materials < 30) {
+                document.getElementById('crisisAlert').classList.remove('hidden');
+            } else {
+                document.getElementById('crisisAlert').classList.add('hidden');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('popDisplay').textContent = gameState.population;
+            document.getElementById('foodBar').style.width = gameState.food + '%';
+            document.getElementById('foodValue').textContent = gameState.food;
+            document.getElementById('waterBar').style.width = gameState.water + '%';
+            document.getElementById('waterValue').textContent = gameState.water;
+            document.getElementById('materialBar').style.width = gameState.materials + '%';
+            document.getElementById('materialValue').textContent = gameState.materials;
+            
+            // Color coding
+            document.getElementById('foodBar').className = 'meter-fill h-3 rounded-full ' + (gameState.food > 60 ? 'bg-green-400' : gameState.food > 30 ? 'bg-yellow-400' : 'bg-red-500');
+            document.getElementById('waterBar').className = 'meter-fill h-3 rounded-full ' + (gameState.water > 60 ? 'bg-blue-400' : gameState.water > 30 ? 'bg-yellow-400' : 'bg-red-500');
+            document.getElementById('materialBar').className = 'meter-fill h-3 rounded-full ' + (gameState.materials > 60 ? 'bg-amber-600' : gameState.materials > 30 ? 'bg-yellow-600' : 'bg-red-600');
+        }
+
+        function showResults(choice, oldFood) {
+            const effects = currentScenario.options[choice].effects;
+            
+            document.getElementById('resultYear').textContent = currentScenario.year;
+            document.getElementById('foodChange').textContent = (effects.food > 0 ? '+' : '') + effects.food + '%';
+            document.getElementById('foodChange').className = 'text-2xl font-bold ' + (effects.food > 0 ? 'text-green-400' : 'text-red-400');
+            
+            document.getElementById('waterChange').textContent = (effects.water > 0 ? '+' : '') + effects.water + '%';
+            document.getElementById('waterChange').className = 'text-2xl font-bold ' + (effects.water > 0 ? 'text-blue-400' : 'text-red-400');
+            
+            document.getElementById('materialChange').textContent = (effects.materials > 0 ? '+' : '') + effects.materials + '%';
+            document.getElementById('materialChange').className = 'text-2xl font-bold ' + (effects.materials > 0 ? 'text-amber-400' : 'text-red-400');
+            
+            document.getElementById('causeEffectText').textContent = currentScenario.causeEffect;
+            document.getElementById('reflectionText').textContent = currentScenario.reflection;
+            
+            // Check prediction accuracy
+            const foodChanged = effects.food !== 0;
+            const predictedCorrectly = (gameState.currentPrediction === 'increase' && effects.food > 0) ||
+                                      (gameState.currentPrediction === 'decrease' && effects.food < 0) ||
+                                      (gameState.currentPrediction === 'same' && effects.food === 0);
+            
+            if (gameState.currentPrediction && predictedCorrectly) {
+                document.getElementById('reflectionText').innerHTML += '<br><br><span class="text-green-400">✓ Your prediction was correct! Great thinking!</span>';
+                createConfetti();
+            }
+            
+            document.getElementById('resultsPanel').classList.remove('hidden');
+            document.getElementById('decisionButtons').classList.add('hidden');
+            
+            document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function addToJournal(choice, effects) {
+            const journal = document.getElementById('journalEntries');
+            if (gameState.year === 1) {
+                journal.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = 'bg-white/10 rounded-lg p-3 slide-in';
+            entry.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <span class="font-bold text-yellow-300">Year ${gameState.year}:</span>
+                        <span class="text-white/90"> Chose Option ${choice}</span>
+                    </div>
+                    <span class="text-xs text-white/50">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="text-xs text-white/70 mt-1">
+                    Pop: ${effects.pop > 0 ? '+' : ''}${effects.pop} | 
+                    Food: ${effects.food > 0 ? '+' : ''}${effects.food} | 
+                    Water: ${effects.water > 0 ? '+' : ''}${effects.water} | 
+                    Materials: ${effects.materials > 0 ? '+' : ''}${effects.materials}
+                </div>
+            `;
+            journal.appendChild(entry);
+        }
+
+        function nextYear() {
+            gameState.year++;
+            
+            if (gameState.year > 5) {
+                endSimulation();
+            } else {
+                loadScenario(gameState.year - 1);
+            }
+        }
+
+        function endSimulation() {
+            document.getElementById('simulationPhase').classList.add('hidden');
+            document.getElementById('endPhase').classList.remove('hidden');
+            
+            document.getElementById('finalPop').textContent = gameState.population;
+            document.getElementById('finalSustainability').textContent = gameState.sustainabilityScore + '%';
+            document.getElementById('finalResources').textContent = Math.round((gameState.food + gameState.water + gameState.materials) / 3) + '%';
+            
+            let verdict = '';
+            if (gameState.sustainabilityScore >= 70) {
+                verdict = '🌟 Excellent! You achieved a sustainable balance between population growth and resource preservation.';
+            } else if (gameState.sustainabilityScore >= 40) {
+                verdict = '⚠️ Moderate. The island survived but faces ongoing resource challenges.';
+            } else {
+                verdict = '💥 Critical! Resource depletion threatens the island\'s long-term survival.';
+            }
+            document.getElementById('finalVerdict').textContent = verdict;
+            
+            createConfetti();
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = ['#fbbf24', '#f87171', '#60a5fa', '#34d399'][Math.floor(Math.random() * 4)];
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 100);
+            }
+        }
+
+        function showHelp() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function hideHelp() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        // Close modal on outside click
+        document.getElementById('helpModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideHelp();
+            }
+        });
+    </script>
+</body>
+</html>
+```
